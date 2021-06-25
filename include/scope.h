@@ -1,7 +1,7 @@
 #ifndef PSEUDOC_SCOPE_H
 #define PSEUDOC_SCOPE_H
 
-#include "memory.h"
+#include "p_memory.h"
 #include "decl.h"
 
 typedef struct p_scope p_scope;

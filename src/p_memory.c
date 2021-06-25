@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "memory.h"
+#include "p_memory.h"
 
 typedef struct {
   p_byte* buffer;
