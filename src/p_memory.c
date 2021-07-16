@@ -21,7 +21,7 @@ struct chunk {
    * to find the free momory block
    * 
    * this field will always be not NULL
-   * a safeguard is initialized
+   * a safeguard is initializedbu
    **/
   struct chunk_usage* usage_list;
   /**
@@ -252,28 +252,53 @@ enum gc_level {
   gc_instant = 0b1000
 };
 
+static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
+  // indirect pointer for removal
+  chunk_t** ip = &memory_pool;
+  int free_count = 0;
+  while (*ip) {
+    if (predicate(*ip)) {
+      chunk_t* cp = *ip;
+      *ip = (*ip)->next;
+      cp->next = NULL;
+
+      if (lvl & gc_clean)
+        free(cp);
+      else 
+        chunk_free(cp);
+      free_count++;
+
+      if (lvl & gc_instant)
+        return 1;
+    }
+    ip = &(*ip)->next;
+  }
+
+  return free_count;
+}
+
+static int quick_check_free(chunk_t* cp) {
+  if (!cp->n_refs)
+    return 1;
+  struct chunk_usage* cup = cp->usage_list;
+  while (cup->next)
+    cup = cup->next;
+  return cup->end == (byte_t*)cp->head + cp->size;
+}
+
+static int regular_check_free(chunk_t* cp) {
+  if (!cp->n_refs)
+    return 1;
+  
+  return 0;
+}
+
 void pseudo_gcollect(gc_level_t lvl) {
   if (lvl & gc_quick) {
-    // indirect pointer for removal
-    chunk_t** ip = &memory_pool;
-    while (*ip) {
-      if (!(*ip)->n_refs) {
-        chunk_t* cp = *ip;
-        *ip = (*ip)->next;
-        cp->next = NULL;
-
-        if (lvl & gc_clean)
-          free(cp);
-        else 
-          chunk_free(cp);
-
-        if (lvl & gc_instant)
-          return;
-      }
-      ip = &(*ip)->next;
-    }
+    int free_count = free_memory(&quick_check_free, lvl);
+    if (lvl & gc_instant && free_count)
+      return;
   }
-  if (lvl & gc_regular) {
-
-  }
+  if (lvl & gc_regular)
+    free_memory(&regular_check_free, lvl);
 }
