@@ -99,7 +99,7 @@ static void chunk_free(chunk_t* cp) {
 }
 
 int pseudo_malloc(size_t n_bytes, atom_t* r_atom) {
-  // indirect pointer
+  // indirect pointer for insertion
   struct chunk_usage** ip;
   chunk_t* cp = memory_pool;
   void* start;
@@ -214,6 +214,7 @@ int pseudo_mark_free(const atom_t atom) {
   void* start = cp->head;
   void* free_start = (byte_t*)start + atom.offset;
   void* free_end = (byte_t*)free_start + atom.size;
+  // indirect pointer for insertion or update
   struct chunk_usage** ip = &cp->freed_list;
 
   while (*ip) {
@@ -253,6 +254,7 @@ enum gc_level {
 
 void pseudo_gcollect(gc_level_t lvl) {
   if (lvl & gc_quick) {
+    // indirect pointer for removal
     chunk_t** ip = &memory_pool;
     while (*ip) {
       if (!(*ip)->n_refs) {
