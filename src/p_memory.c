@@ -47,6 +47,7 @@ static chunk_t* memory_pool = &guardian;
 
 #define MIN_ALLOC_SIZE 1024
 #define CHUNK_FULLSIZE (sizeof(chunk_t) + sizeof(struct chunk_usage))
+#define N_BYTES_BETWEEN(vp1, vp2) ((byte_t*)vp1 - (byte_t*)vp2)
 
 static chunk_t* chunk_alloc(size_t n_bytes) {
   if (n_bytes < MIN_ALLOC_SIZE)
@@ -94,6 +95,7 @@ static void chunk_free(chunk_t* cp) {
     free(cfp);
     cfp = cp->freed_list;
   }
+  cp->size = N_BYTES_BETWEEN(cup->end, cp->head);
 
   memory_pool = cp;
 }
@@ -289,7 +291,49 @@ static int quick_check_free(chunk_t* cp) {
 static int regular_check_free(chunk_t* cp) {
   if (!cp->n_refs)
     return 1;
-  
+  struct chunk_usage** iup = &cp->usage_list;
+  struct chunk_usage* cfp = &cp->freed_list;
+
+  while ((*iup)->next && cfp) {
+    struct chunk_usage* tup;
+    if ((*iup)->end >= cfp->end) {
+      void* uhp = (byte_t*)(*iup)->end - (*iup)->size;
+      void* fhp = (byte_t*)cfp->end - cfp->size;
+      if (uhp == fhp) {
+        if ((*iup)->end == cfp->end) {
+          tup = *iup;
+          iup = &tup->next;
+          free(tup);
+        }
+        else
+          (*iup)->size += cfp->size;
+      }
+      else if ((*iup)->end != cfp->end) {
+        tup = malloc(sizeof(struct chunk_usage));
+        if (tup == NULL)
+          return OUT_OF_MEMORY;
+        (*iup)->size = N_BYTES_BETWEEN((*iup)->end, cfp->end);;
+
+        tup->end = fhp;
+        tup->size = N_BYTES_BETWEEN(fhp, uhp);
+        tup->next = *iup;
+
+        // insert this
+        *iup = tup;
+        iup = &tup->next;
+      }
+      else
+        (*iup)->end = fhp;
+      
+      tup = cfp;
+      cfp = tup->next;
+      free(tup);
+      continue;
+    }
+    
+    iup = &(*iup)->next;
+  }
+
   return 0;
 }
 
