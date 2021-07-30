@@ -182,6 +182,12 @@ int pseudo_salloc(size_t n_bytes, atom_t* r_atom) {
   used->end = (byte_t*)cp->head + n_bytes;
   cp->usage_list = used;
 
+  *r_atom = (atom_t){
+    .from = cp,
+    .offset = 0,
+    .size = n_bytes
+  };
+
   return EXIT_SUCCESS;
 }
 
@@ -208,14 +214,14 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom) {
   return pseudo_malloc(n_bytes, r_atom);
 }
 
-int pseudo_mark_free(const atom_t atom) {
-  if (atom.from == NULL || !atom.size)
+int pseudo_mark_free(const atom_t* r_atom) {
+  if (r_atom->from == NULL || !r_atom->size)
     return MAJOR_PROBLEM;
   
-  chunk_t* cp = atom.from;
+  chunk_t* cp = r_atom->from;
   void* start = cp->head;
-  void* free_start = (byte_t*)start + atom.offset;
-  void* free_end = (byte_t*)free_start + atom.size;
+  void* free_start = (byte_t*)start + r_atom->offset;
+  void* free_end = (byte_t*)free_start + r_atom->size;
   // indirect pointer for insertion or update
   struct chunk_usage** ip = &cp->freed_list;
 
@@ -231,7 +237,7 @@ int pseudo_mark_free(const atom_t atom) {
   }
 
   if ((*ip) && (byte_t*)free_end + (*ip)->size == (*ip)->end)
-    (*ip)->size += atom.size;
+    (*ip)->size += r_atom->size;
   else {
     struct chunk_usage* tup = malloc(sizeof(struct chunk_usage));
     if (tup == NULL)
@@ -239,20 +245,13 @@ int pseudo_mark_free(const atom_t atom) {
     
     tup->end = free_end;
     tup->next = *ip;
-    tup->size = atom.size;
+    tup->size = r_atom->size;
 
     *ip = tup;
   }
 
   return EXIT_SUCCESS;
 }
-
-enum gc_level {
-  gc_quick = 0b0001,
-  gc_regular = 0b0010,
-  gc_clean = 0b0100,
-  gc_instant = 0b1000
-};
 
 static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
   // indirect pointer for removal

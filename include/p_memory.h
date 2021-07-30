@@ -26,7 +26,12 @@ typedef struct atom atom_t;
 /**
  * enum for GC level
  **/
-typedef enum gc_level gc_level_t;
+typedef enum gc_level{
+  gc_quick = 0b0001,
+  gc_regular = 0b0010,
+  gc_clean = 0b0100,
+  gc_instant = 0b1000
+} gc_level_t;
 
 /**
  * internal allocation method to create more chunks
@@ -70,7 +75,7 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom);
  * @return EXIT_SUCCESS | OUT_OF_MEMORY |
  * MINOR_PROBLEM | MAJOR_PROBLEM
  **/
-int pseudo_mark_free(const atom_t atom);
+int pseudo_mark_free(const atom_t* r_atom);
 
 /**
  * garbage collection
