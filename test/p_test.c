@@ -2,7 +2,12 @@
 #include "p_test.h"
 
 int main() {
-  int (*uts[])() = { &p_memory_ut };
+  int (*uts[])() = {
+#ifdef PSEUDOC_MEMORY_UT
+    &p_memory_ut
+#endif
+  };
+
   int n_cases = sizeof(uts) / sizeof(uts[0]);
   
   for (int i = 0; i < n_cases; i++) {
