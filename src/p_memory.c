@@ -4,6 +4,8 @@
 static unsigned int n_chunks;
 static unsigned int n_chunks_limit;
 
+typedef struct chunk_usage usage_t;
+
 struct chunk_usage {
   unsigned int size;
   void* end;
@@ -23,12 +25,12 @@ struct chunk {
    * this field will always be not NULL
    * a safeguard is initializedbu
    **/
-  struct chunk_usage* usage_list;
+  usage_t* usage_list;
   /**
    * when an `atom_t` is marked free, append it to this
    * will merge into the `usage_list` lazily when gc is called
    **/
-  struct chunk_usage* freed_list;
+  usage_t* freed_list;
   struct chunk* next;
   /**
    * number of references by the variables
@@ -46,7 +48,7 @@ static chunk_t guardian = { .size = 0 };
 static chunk_t* memory_pool = &guardian;
 
 #define MIN_ALLOC_SIZE 1024
-#define CHUNK_FULLSIZE (sizeof(chunk_t) + sizeof(struct chunk_usage))
+#define CHUNK_FULLSIZE (sizeof(chunk_t) + sizeof(usage_t))
 #define N_BYTES_BETWEEN(vp1, vp2) ((byte_t*)vp1 - (byte_t*)vp2)
 
 static chunk_t* chunk_alloc(size_t n_bytes) {
@@ -63,7 +65,7 @@ static chunk_t* chunk_alloc(size_t n_bytes) {
   cp->next = NULL;
 
   // initialize the usage safeguard
-  cp->usage_list = (byte_t*)cp + sizeof(chunk_t);
+  cp->usage_list = (usage_t*)((byte_t*)cp + sizeof(chunk_t));
   cp->usage_list->size = 0;
   cp->usage_list->end = (byte_t*)cp->head + n_bytes;
   cp->usage_list->next = NULL;
@@ -75,8 +77,8 @@ static chunk_t* chunk_alloc(size_t n_bytes) {
 }
 
 static void chunk_free(chunk_t* cp) {
-  struct chunk_usage* cup = cp->usage_list;
-  struct chunk_usage* cfp = cp->freed_list;
+  usage_t* cup = cp->usage_list;
+  usage_t* cfp = cp->freed_list;
   chunk_t* p = memory_pool;
   cp->n_refs = 0;
   
@@ -102,7 +104,7 @@ static void chunk_free(chunk_t* cp) {
 
 int pseudo_malloc(size_t n_bytes, atom_t* r_atom) {
   // indirect pointer for insertion
-  struct chunk_usage** ip;
+  usage_t** ip;
   chunk_t* cp = memory_pool;
   void* start;
 
@@ -115,7 +117,7 @@ FIND_CHUNK:
       
       while (*ip) {
         // have enough space
-        if ((byte_t*)start + n_bytes + (*ip)->size <= (*ip)->end) 
+        if ((byte_t*)start + n_bytes + (*ip)->size <= (byte_t*)(*ip)->end) 
           goto EXTRACT_ATOM;
         start = (*ip)->end;
         ip = &(*ip)->next;
@@ -145,14 +147,14 @@ EXTRACT_ATOM:
     (*ip)->end = (byte_t*)start + n_bytes;
   }
   else {
-    struct chunk_usage* used = malloc(sizeof(struct chunk_usage));
+    usage_t* used = malloc(sizeof(usage_t));
     if (used == NULL)
       return OUT_OF_MEMORY;
 
     used->size = n_bytes;
     used->end = (byte_t*)start + n_bytes;
 
-    struct chunk_usage* tp = *ip;
+    usage_t* tp = *ip;
     *ip = used;
     used->next = tp;
   }
@@ -173,7 +175,7 @@ int pseudo_salloc(size_t n_bytes, atom_t* r_atom) {
   if (cp == NULL)
     return OUT_OF_MEMORY;
   
-  struct chunk_usage* used = malloc(sizeof(struct chunk_usage));
+  usage_t* used = malloc(sizeof(usage_t));
   if (used == NULL)
     return OUT_OF_MEMORY;
 
@@ -205,7 +207,7 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom) {
   chunk_free(cp);
   if (cp != r_atom->from) {
     cp->head = (byte_t*)cp + CHUNK_FULLSIZE;
-    cp->usage_list = (byte_t*)cp + sizeof(chunk_t);
+    cp->usage_list = (usage_t*)((byte_t*)cp + sizeof(chunk_t));
   }
   
   cp->size = n_bytes;
@@ -223,10 +225,10 @@ int pseudo_mark_free(const atom_t* r_atom) {
   void* free_start = (byte_t*)start + r_atom->offset;
   void* free_end = (byte_t*)free_start + r_atom->size;
   // indirect pointer for insertion or update
-  struct chunk_usage** ip = &cp->freed_list;
+  usage_t** ip = &cp->freed_list;
 
   while (*ip) {
-    if ((byte_t*)free_end + (*ip)->size <= (*ip)->end)
+    if ((byte_t*)free_end + (*ip)->size <= (byte_t*)(*ip)->end)
       break;
     start = (*ip)->end;
     ip = &(*ip)->next;
@@ -239,7 +241,7 @@ int pseudo_mark_free(const atom_t* r_atom) {
   if ((*ip) && (byte_t*)free_end + (*ip)->size == (*ip)->end)
     (*ip)->size += r_atom->size;
   else {
-    struct chunk_usage* tup = malloc(sizeof(struct chunk_usage));
+    usage_t* tup = malloc(sizeof(usage_t));
     if (tup == NULL)
       return OUT_OF_MEMORY;
     
@@ -281,7 +283,7 @@ static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
 static int quick_check_free(chunk_t* cp) {
   if (!cp->n_refs)
     return 1;
-  struct chunk_usage* cup = cp->usage_list;
+  usage_t* cup = cp->usage_list;
   while (cup->next)
     cup = cup->next;
   return cup->end == (byte_t*)cp->head + cp->size;
@@ -290,11 +292,11 @@ static int quick_check_free(chunk_t* cp) {
 static int regular_check_free(chunk_t* cp) {
   if (!cp->n_refs)
     return 1;
-  struct chunk_usage** iup = &cp->usage_list;
-  struct chunk_usage* cfp = &cp->freed_list;
+  usage_t** iup = &cp->usage_list;
+  usage_t* cfp = cp->freed_list;
 
   while ((*iup)->next && cfp) {
-    struct chunk_usage* tup;
+    usage_t* tup;
     if ((*iup)->end >= cfp->end) {
       void* uhp = (byte_t*)(*iup)->end - (*iup)->size;
       void* fhp = (byte_t*)cfp->end - cfp->size;
@@ -308,7 +310,7 @@ static int regular_check_free(chunk_t* cp) {
           (*iup)->size += cfp->size;
       }
       else if ((*iup)->end != cfp->end) {
-        tup = malloc(sizeof(struct chunk_usage));
+        tup = malloc(sizeof(usage_t));
         if (tup == NULL)
           return OUT_OF_MEMORY;
         (*iup)->size = N_BYTES_BETWEEN((*iup)->end, cfp->end);;
