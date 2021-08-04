@@ -23,6 +23,12 @@ typedef struct chunk chunk_t;
  **/
 typedef struct atom atom_t;
 
+struct atom {
+  chunk_t* from;
+  size_t offset;
+  size_t size;
+};
+
 /**
  * enum for GC level
  **/
