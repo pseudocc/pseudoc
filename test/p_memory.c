@@ -14,13 +14,13 @@ int malloc_tiny2_atoms() {
 
   code = pseudo_malloc(1, &atoms[0]);
   if (code) {
-    printf("Allocate first atom with error: %d\n", code);
+    printf("Allocate the first atom with error: %d\n", code);
     return code;
   }
 
   code = pseudo_malloc(1, &atoms[1]);
   if (code) {
-    printf("Allocate first atom with error: %d\n", code);
+    printf("Allocate the second atom with error: %d\n", code);
     return code;
   }
   
@@ -32,7 +32,7 @@ int malloc_tiny2_atoms() {
   for (int i = 0; i < 2; i++) {
     code = pseudo_mark_free(&atoms[0]);
     if (code) {
-      printf("Mark free with error for atom %d.\n", i);
+      printf("Mark free for atom %d with error: %d\n", i, code);
       return code;
     }
   }
@@ -43,8 +43,53 @@ int malloc_tiny2_atoms() {
   return 0;
 }
 
+/**
+ * salloc->realloc is the safe way
+ * malloc->realloc might throw an error
+ **/
+int realloc_full_test() {
+  int code;
+  atom_t m_atom, s_atom;
+
+  printf("realloc_atom\n");
+
+  code = pseudo_salloc(1, &s_atom);
+  if (code) {
+    printf("Allocate s_atom with error: %d\n", code);
+    return code;
+  }
+
+  code = pseudo_malloc(1, &m_atom);
+  if (code) {
+    printf("Allocate m_atom with error: %d\n", code);
+    return code;
+  }
+
+  code = pseudo_realloc(10, &m_atom);
+  if (!code) {
+    printf("Re-allocate should throw an error, unexpected.\n");
+    return -1;
+  }
+
+  code = pseudo_realloc(10, &s_atom);
+  if (code) {
+    printf("Re-allocate s_atom with error: %d\n", code);
+    return -1;
+  }
+  
+  // this part is already tested in malloc_tiny2_atoms
+  pseudo_mark_free(&m_atom);
+  pseudo_mark_free(&s_atom);
+  pseudo_gcollect(gc_regular | gc_clean);
+
+  return 0;
+}
+
 int p_memory_ut() {
-  int (*uts[])() = { &malloc_tiny2_atoms };
+  int (*uts[])() = { 
+    &malloc_tiny2_atoms,
+    &realloc_full_test
+  };
   int n_cases = sizeof(uts) / sizeof(uts[0]);
   
   for (int i = 0; i < n_cases; i++) {
