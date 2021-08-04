@@ -52,42 +52,33 @@ int malloc_tiny2_atoms() {
 }
 
 /**
- * salloc->realloc is the safe way
- * malloc->realloc might throw an error
+ * re-allocate at the same position if space permits
+ * @todo equality check
  **/
 int realloc_full_test() {
   int code;
-  atom_t m_atom, s_atom;
+  atom_t a, b, c, t;
 
   printf("realloc_atom\n");
 
-  code = pseudo_salloc(1, &s_atom);
-  if (code) {
-    printf("Allocate s_atom with error: %d\n", code);
-    return code;
-  }
-
-  code = pseudo_malloc(1, &m_atom);
-  if (code) {
-    printf("Allocate m_atom with error: %d\n", code);
-    return code;
-  }
-
-  code = pseudo_realloc(10, &m_atom);
-  if (!code) {
-    printf("Re-allocate should throw an error, unexpected.\n");
-    return -1;
-  }
-
-  code = pseudo_realloc(10, &s_atom);
-  if (code) {
-    printf("Re-allocate s_atom with error: %d\n", code);
-    return -1;
-  }
+  pseudo_malloc(MIN_ALLOC_SIZE >> 3, &a);
+  pseudo_malloc(MIN_ALLOC_SIZE >> 3, &b);
+  pseudo_malloc(MIN_ALLOC_SIZE >> 3, &c);
   
-  // this part is already tested in malloc_tiny2_atoms
-  pseudo_mark_free(&m_atom);
-  pseudo_mark_free(&s_atom);
+  t = c;
+  pseudo_realloc(MIN_ALLOC_SIZE >> 2, &c);
+  if (t.from != c.from || t.offset != c.offset) {
+    printf("Should use previous position when left space is enough.\n");
+    return -1;
+  }
+
+  /**
+   * @todo equality check
+   **/
+
+  pseudo_mark_free(&a);
+  pseudo_mark_free(&b);
+  pseudo_mark_free(&c);
   pseudo_gcollect(gc_regular | gc_clean);
 
   return 0;
