@@ -7,9 +7,10 @@ Be happy everyday!
 ## Status
 
 Running the memory management down.
--[x] Pointer type of pseudoc: `atom`
--[x] allocate and free
--[ ] get and set value
+
+- [x] Pointer type of pseudoc: `atom`
+- [x] allocate and free
+- [ ] get and set value
 
 Testing new ideas.
 
