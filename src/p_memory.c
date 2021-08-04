@@ -1,8 +1,8 @@
 #include "p_memory.h"
 #include "p_system.h"
 
-static unsigned int n_chunks;
-static unsigned int n_chunks_limit;
+static unsigned int n_chunks = 0;
+static unsigned int n_chunks_limit = 16;
 
 typedef struct chunk_usage usage_t;
 
@@ -38,16 +38,10 @@ struct chunk {
   unsigned int n_refs;
 };
 
-struct atom {
-  chunk_t* from;
-  size_t offset;
-  size_t size;
-};
-
 static chunk_t guardian = { .size = 0 };
 static chunk_t* memory_pool = &guardian;
 
-#define MIN_ALLOC_SIZE 1024
+#define MIN_ALLOC_SIZE 4096
 #define CHUNK_FULLSIZE (sizeof(chunk_t) + sizeof(usage_t))
 #define N_BYTES_BETWEEN(vp1, vp2) ((byte_t*)vp1 - (byte_t*)vp2)
 
@@ -159,11 +153,10 @@ EXTRACT_ATOM:
     used->next = tp;
   }
 
-  *r_atom = (atom_t){
-    .from = cp,
-    .offset = (byte_t*)start - (byte_t*)cp->head,
-    .size = n_bytes
-  };
+  r_atom->from = cp;
+  r_atom->offset = N_BYTES_BETWEEN(start, cp->head);
+  r_atom->size = n_bytes;
+
   cp->size -= n_bytes;
   cp->n_refs++;
 
@@ -171,6 +164,9 @@ EXTRACT_ATOM:
 }
 
 int pseudo_salloc(size_t n_bytes, atom_t* r_atom) {
+  if (r_atom == NULL)
+    return MAJOR_PROBLEM;
+  
   chunk_t* cp = chunk_alloc(n_bytes);
   if (cp == NULL)
     return OUT_OF_MEMORY;
@@ -184,11 +180,9 @@ int pseudo_salloc(size_t n_bytes, atom_t* r_atom) {
   used->end = (byte_t*)cp->head + n_bytes;
   cp->usage_list = used;
 
-  *r_atom = (atom_t){
-    .from = cp,
-    .offset = 0,
-    .size = n_bytes
-  };
+  r_atom->from = cp;
+  r_atom->offset = 0;
+  r_atom->size = n_bytes;
 
   return EXIT_SUCCESS;
 }
@@ -217,8 +211,8 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom) {
 }
 
 int pseudo_mark_free(const atom_t* r_atom) {
-  if (r_atom->from == NULL || !r_atom->size)
-    return MAJOR_PROBLEM;
+  if (r_atom == NULL || r_atom->from == NULL || !r_atom->size)
+    return MAJOR_PROBLEM; 
   
   chunk_t* cp = r_atom->from;
   void* start = cp->head;
@@ -252,6 +246,7 @@ int pseudo_mark_free(const atom_t* r_atom) {
     *ip = tup;
   }
 
+  cp->n_refs--;
   return EXIT_SUCCESS;
 }
 
@@ -265,8 +260,10 @@ static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
       *ip = (*ip)->next;
       cp->next = NULL;
 
-      if (lvl & gc_clean)
+      if (lvl & gc_clean) {
         free(cp);
+        n_chunks--;
+      }
       else 
         chunk_free(cp);
       free_count++;
