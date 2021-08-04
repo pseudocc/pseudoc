@@ -11,6 +11,8 @@
 
 #include <stdlib.h>
 
+#define MIN_ALLOC_SIZE 4096
+
 typedef unsigned char byte_t;
 
 /**

@@ -49,7 +49,6 @@ struct chunk {
 static chunk_t guardian = { .size = 0 };
 static chunk_t* memory_pool = &guardian;
 
-#define MIN_ALLOC_SIZE 4096
 #define CHUNK_FULLSIZE (sizeof(chunk_t) + sizeof(usage_t))
 #define N_BYTES_BETWEEN(vp1, vp2) ((byte_t*)vp1 - (byte_t*)vp2)
 
