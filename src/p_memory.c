@@ -1,3 +1,11 @@
+/**
+ * @file p_memory.c
+ * @brief memory management things for pseudoc
+ * 
+ * @author Yu Ze <pseudoc@163.com>
+ * @date Tue Jul 13 2021 15:18:12 GMT+0800 (China Standard Time)
+ **/
+
 #include "p_memory.h"
 #include "p_system.h"
 

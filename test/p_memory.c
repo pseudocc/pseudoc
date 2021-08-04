@@ -1,3 +1,11 @@
+/**
+ * @file p_memory.c
+ * @brief memory management UT
+ * 
+ * @author Yu Ze <pseudoc@163.com>
+ * @date Wed Aug 04 2021 21:52:41 GMT+0800 (China Standard Time)
+ **/
+
 #include <stdio.h>
 #include "p_test.h"
 #include "p_memory.h"
@@ -83,6 +91,15 @@ int realloc_full_test() {
   pseudo_gcollect(gc_regular | gc_clean);
 
   return 0;
+}
+
+/**
+ * regular_check_free contains too many
+ * complicated logics
+ * we use this to make sure it works well
+ **/
+int gc_regular_test() {
+
 }
 
 int p_memory_ut() {
