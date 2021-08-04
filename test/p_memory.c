@@ -99,13 +99,38 @@ int realloc_full_test() {
  * we use this to make sure it works well
  **/
 int gc_regular_test() {
+  int code;
+  atom_t a, b, c, d;
 
+  pseudo_malloc(MIN_ALLOC_SIZE >> 2, &a);
+  pseudo_malloc(MIN_ALLOC_SIZE >> 1, &b);
+  pseudo_malloc(MIN_ALLOC_SIZE >> 2, &c);
+
+  pseudo_mark_free(&b);
+  pseudo_gcollect(gc_regular);
+
+  pseudo_malloc(MIN_ALLOC_SIZE >> 1, &b);
+  pseudo_malloc(MIN_ALLOC_SIZE >> 1, &d);
+
+  if (b.from != d.from) {
+    printf("atom b and d are not from the same chunk, unexpected.\n");
+    return -1;
+  }
+  
+  pseudo_mark_free(&a);
+  pseudo_mark_free(&b);
+  pseudo_mark_free(&c);
+  pseudo_mark_free(&d);
+  pseudo_gcollect(gc_regular | gc_clean);
+
+  return 0;
 }
 
 int p_memory_ut() {
   int (*uts[])() = { 
     &malloc_tiny2_atoms,
-    &realloc_full_test
+    &realloc_full_test,
+    &gc_regular_test
   };
   int n_cases = sizeof(uts) / sizeof(uts[0]);
   
