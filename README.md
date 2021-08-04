@@ -6,9 +6,14 @@ Be happy everyday!
 
 ## Status
 
-Coding...
+Running the memory management down.
+-[x] Pointer type of pseudoc: `atom`
+-[x] allocate and free
+-[ ] get and set value
 
-Testing new ideas. No unit test at all.
+Testing new ideas.
+
+Finish UT at the same time.
 
 ## Code Style
 - indent: 2 whitespaces
