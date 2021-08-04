@@ -34,7 +34,7 @@ struct atom {
 /**
  * enum for GC level
  **/
-typedef enum gc_level{
+typedef enum gc_level {
   gc_quick = 0b0001,
   gc_regular = 0b0010,
   gc_clean = 0b0100,
@@ -53,20 +53,17 @@ static chunk_t* chunk_alloc(size_t n_bytes);
 static void chunk_free(chunk_t* cp);
 
 /**
+ * internal memory copy method
+ **/
+static void atom_copy(atom_t* src, atom_t* dest);
+
+/**
  * memoery allocation that try to find a free chunk
  * first, otherwise call native `malloc`
  * 
  * @return EXIT_SUCCESS | OUT_OF_MEMORY
  **/
 int pseudo_malloc(size_t n_bytes, atom_t* r_atom);
-
-/**
- * sizeable allocation that does not share this chunk
- * of memory with other variables
- * 
- * @return EXIT_SUCCESS | OUT_OF_MEMORY
- **/
-int pseudo_salloc(size_t n_bytes, atom_t* r_atom);
 
 /**
  * re-allocate sizeable allocation that only call native

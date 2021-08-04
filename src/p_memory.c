@@ -103,6 +103,22 @@ static void chunk_free(chunk_t* cp) {
   memory_pool = cp;
 }
 
+static void atom_copy(atom_t* src, atom_t* dst) {
+  chunk_t* scp = src->from;
+  chunk_t* dcp = dst->from;
+  
+  // same position skip the copy step
+  if (scp == dcp && src->offset == dst->offset)
+    return;
+
+  byte_t* sbp = (byte_t*)scp->head + src->offset;
+  byte_t* dbp = (byte_t*)dcp->head + dst->offset;
+
+  size_t size = src->size > dst->size ? dst->size : src->size;
+  while (size--)
+    *dbp++ = *sbp++;
+}
+
 int pseudo_malloc(size_t n_bytes, atom_t* r_atom) {
   // indirect pointer for insertion
   usage_t** ip;
@@ -170,51 +186,34 @@ EXTRACT_ATOM:
   return EXIT_SUCCESS;
 }
 
-int pseudo_salloc(size_t n_bytes, atom_t* r_atom) {
-  if (r_atom == NULL)
-    return MAJOR_PROBLEM;
-  
-  chunk_t* cp = chunk_alloc(n_bytes);
-  if (cp == NULL)
-    return OUT_OF_MEMORY;
-  
-  usage_t* used = malloc(sizeof(usage_t));
-  if (used == NULL)
-    return OUT_OF_MEMORY;
-
-  used->next = cp->usage_list;
-  used->size = n_bytes;
-  used->end = (byte_t*)cp->head + n_bytes;
-  cp->usage_list = used;
-
-  r_atom->from = cp;
-  r_atom->offset = 0;
-  r_atom->size = n_bytes;
-
-  return EXIT_SUCCESS;
-}
-
 int pseudo_realloc(size_t n_bytes, atom_t* r_atom) {
-  if (r_atom == NULL || r_atom->from == NULL || r_atom->offset)
+  if (r_atom == NULL || r_atom->from == NULL)
     return MAJOR_PROBLEM;
 
-  if (!n_bytes)
-    chunk_free(r_atom->from);
+  int code = pseudo_mark_free(r_atom);
+  if (!n_bytes || code)
+    return code;
   
-  chunk_t* cp = realloc(r_atom->from, n_bytes + CHUNK_FULLSIZE);
-  if (cp == NULL)
-    return OUT_OF_MEMORY;
-  
-  chunk_free(cp);
-  if (cp != r_atom->from) {
-    cp->head = (byte_t*)cp + CHUNK_FULLSIZE;
-    cp->usage_list = (usage_t*)((byte_t*)cp + sizeof(chunk_t));
-  }
-  
-  cp->size = n_bytes;
-  cp->usage_list->end = (byte_t*)cp->head + n_bytes;
+  atom_t t_atom = (atom_t){
+    .from = r_atom->from,
+    .offset = r_atom->offset,
+    .size = r_atom->size
+  };
 
-  return pseudo_malloc(n_bytes, r_atom);
+  chunk_t* cp = r_atom->from;
+  regular_check_free(cp);
+
+  // move this chunk to the front
+  chunk_t** ip = &cp;
+  *ip = cp->next;
+  cp->next = memory_pool;
+  memory_pool = cp;
+
+  code = pseudo_malloc(n_bytes, r_atom);
+  if (!code)
+    atom_copy(&t_atom, r_atom);
+  
+  return code;
 }
 
 int pseudo_mark_free(const atom_t* r_atom) {
