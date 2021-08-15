@@ -58,6 +58,11 @@ static void chunk_free(chunk_t* cp);
 static void atom_copy(atom_t* src, atom_t* dest);
 
 /**
+ * internal method to free the allocated memory
+ **/
+static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl);
+
+/**
  * memoery allocation that try to find a free chunk
  * first, otherwise call native `malloc`
  * 
@@ -87,6 +92,14 @@ int pseudo_mark_free(const atom_t* atom);
  **/
 void pseudo_gcollect(gc_level_t lvl);
 
+/**
+ * get the c pointer from `atom_t`
+ **/
 void* pseudo_cpointer(const atom_t* atom);
+
+/**
+ * clear all allocated memory chunks
+ **/
+inline void pseudo_mclean();
 
 #endif

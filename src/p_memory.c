@@ -103,6 +103,33 @@ static void chunk_free(chunk_t* cp) {
   memory_pool = cp;
 }
 
+static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
+  // indirect pointer for removal
+  chunk_t** ip = &memory_pool;
+  int free_count = 0;
+  while (*ip) {
+    if (predicate(*ip)) {
+      chunk_t* cp = *ip;
+      *ip = (*ip)->next;
+      cp->next = NULL;
+
+      if (lvl & gc_clean) {
+        free(cp);
+        n_chunks--;
+      }
+      else 
+        chunk_free(cp);
+      free_count++;
+
+      if (lvl & gc_instant)
+        return 1;
+    }
+    ip = &(*ip)->next;
+  }
+
+  return free_count;
+}
+
 static void atom_copy(atom_t* src, atom_t* dst) {
   chunk_t* scp = src->from;
   chunk_t* dcp = dst->from;
@@ -256,33 +283,6 @@ int pseudo_mark_free(const atom_t* atom) {
   return EXIT_SUCCESS;
 }
 
-static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
-  // indirect pointer for removal
-  chunk_t** ip = &memory_pool;
-  int free_count = 0;
-  while (*ip) {
-    if (predicate(*ip)) {
-      chunk_t* cp = *ip;
-      *ip = (*ip)->next;
-      cp->next = NULL;
-
-      if (lvl & gc_clean) {
-        free(cp);
-        n_chunks--;
-      }
-      else 
-        chunk_free(cp);
-      free_count++;
-
-      if (lvl & gc_instant)
-        return 1;
-    }
-    ip = &(*ip)->next;
-  }
-
-  return free_count;
-}
-
 static int quick_check_free(chunk_t* cp) {
   if (!cp->n_refs)
     return 1;
@@ -356,4 +356,12 @@ void* pseudo_cpointer(const atom_t* atom) {
     return NULL;
   byte_t* head = (byte_t*)atom->from->head;
   return (void*)(head + atom->offset);
+}
+
+static inline int clean_everything(chunk_t* cp) {
+  return 1;
+}
+
+inline void pseudo_mclean() {
+  free_memory(&clean_everything, gc_clean);
 }
