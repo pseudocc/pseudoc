@@ -80,11 +80,13 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom);
  * @return EXIT_SUCCESS | OUT_OF_MEMORY |
  * MINOR_PROBLEM | MAJOR_PROBLEM
  **/
-int pseudo_mark_free(const atom_t* r_atom);
+int pseudo_mark_free(const atom_t* atom);
 
 /**
  * garbage collection
  **/
 void pseudo_gcollect(gc_level_t lvl);
+
+void* pseudo_cpointer(const atom_t* atom);
 
 #endif

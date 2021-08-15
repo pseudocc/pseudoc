@@ -216,14 +216,14 @@ int pseudo_realloc(size_t n_bytes, atom_t* r_atom) {
   return code;
 }
 
-int pseudo_mark_free(const atom_t* r_atom) {
-  if (r_atom == NULL || r_atom->from == NULL || !r_atom->size)
+int pseudo_mark_free(const atom_t* atom) {
+  if (atom == NULL || atom->from == NULL || !atom->size)
     return MAJOR_PROBLEM; 
   
-  chunk_t* cp = r_atom->from;
+  chunk_t* cp = atom->from;
   void* start = cp->head;
-  void* free_start = (byte_t*)start + r_atom->offset;
-  void* free_end = (byte_t*)free_start + r_atom->size;
+  void* free_start = (byte_t*)start + atom->offset;
+  void* free_end = (byte_t*)free_start + atom->size;
   // indirect pointer for insertion or update
   usage_t** ip = &cp->freed_list;
 
@@ -239,7 +239,7 @@ int pseudo_mark_free(const atom_t* r_atom) {
   }
 
   if ((*ip) && (byte_t*)free_end + (*ip)->size == (*ip)->end)
-    (*ip)->size += r_atom->size;
+    (*ip)->size += atom->size;
   else {
     usage_t* tup = malloc(sizeof(usage_t));
     if (tup == NULL)
@@ -247,7 +247,7 @@ int pseudo_mark_free(const atom_t* r_atom) {
     
     tup->end = free_end;
     tup->next = *ip;
-    tup->size = r_atom->size;
+    tup->size = atom->size;
 
     *ip = tup;
   }
@@ -349,4 +349,11 @@ void pseudo_gcollect(gc_level_t lvl) {
   }
   if (lvl & gc_regular)
     free_memory(&regular_check_free, lvl);
+}
+
+void* pseudo_cpointer(const atom_t* atom) {
+  if (atom == NULL || atom->from == NULL)
+    return NULL;
+  byte_t* head = (byte_t*)atom->from->head;
+  return (void*)(head + atom->offset);
 }
