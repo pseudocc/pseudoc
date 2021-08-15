@@ -116,6 +116,9 @@ static int free_memory(int (*predicate)(chunk_t*), gc_level_t lvl) {
       if (lvl & gc_clean) {
         free(cp);
         n_chunks--;
+
+        if ((n_chunks << 1) > n_chunks_limit)
+          n_chunks_limit = n_chunks_limit >> 1;
       }
       else 
         chunk_free(cp);
@@ -172,7 +175,8 @@ FIND_CHUNK:
 
   if (n_chunks > n_chunks_limit) {
     pseudo_gcollect(gc_regular | gc_instant);
-    n_chunks_limit = n_chunks_limit << 1;
+    if (n_chunks > n_chunks_limit)
+      n_chunks_limit = n_chunks_limit << 1;
     
     goto FIND_CHUNK;
   }
