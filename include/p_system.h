@@ -22,6 +22,16 @@
 #define ABORT_SIGBUS 138
 
 /**
+ * status value describling the exit lifecycle
+ **/
+typedef struct exit_status exit_status_t;
+
+/**
+ * function pointer type for exit hooks
+ **/
+typedef void (*exit_handle_t)(exit_status_t* r_status);
+
+/**
  * normal exit, trigger some hooks
  **/
 void pseudo_exit(int code);
