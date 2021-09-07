@@ -156,6 +156,9 @@ pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
 
   if (mp->n_chunks == mp->n_chunks_limits) {
     mp->n_chunks_limits = mp->n_chunks_limits << 1;
+    mp->chunks = realloc(mp->chunks, sizeof(mchunk_t*) * mp->n_chunks_limits);
+    if (mp->chunks == NULL)
+      return NULL;
     pcollect(mp);
   }
 
