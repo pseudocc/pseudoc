@@ -1,7 +1,8 @@
 #ifndef PSEUDOC_TYPES_H
 #define PSEUDOC_TYPES_H
 
-#include <stdbool.h>
+#define false 0
+#define true 1
 
 typedef unsigned char byte_t;
 typedef unsigned long long size_t;
