@@ -51,8 +51,10 @@ static void pcollect(memory_t* mp) {
           cp->unused = NULL;
         }
 #ifdef DEBUG
-        if (*ip == NULL)
+        if (*ip == NULL) {
           pkraise(SIGN_SEGFAULT);
+          return;
+        }
 #endif
         (*ip)->ptr = p;
         ip = &(*ip)->next;
@@ -130,6 +132,27 @@ static mchunk_t* alloc_chunk(unsigned n_bytes) {
   pptr(head, alloc_size, 0);
 
   return cp;
+}
+
+static void free_chunk(mchunk_t* cp) {
+#ifdef DEBUG
+  if (cp == NULL) {
+    pkraise(SIGN_SEGFAULT);
+    return;
+  }
+#endif
+  pptr_list_t* p = cp->free;
+  while (p != NULL) {
+    pptr_list_t* tp = p->next;
+    free(p);
+    if (tp == NULL) {
+      p = cp->unused;
+      cp->unused = NULL;
+    }
+    else
+      p = tp;
+  }
+  free(cp);
 }
 
 pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
@@ -263,6 +286,9 @@ void pfree(memory_t* mp, pptr_t* p) {
 void pmclean(memory_t* mp) {
   if (mp == NULL)
     return;
+  
+  for (unsigned i = 0; i < mp->n_chunks; i++)
+    free_chunk(mp->chunks[i]);
   
   free(mp->chunks);
   free(mp);
