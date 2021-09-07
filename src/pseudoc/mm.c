@@ -76,7 +76,7 @@ static void pmemcpy(pptr_t* dst, pptr_t* src) {
 }
 
 static inline void try_cc(memory_t* mp) {
-  if (--(mp->cc_count_down) == 0)
+  if (!--(mp->cc_count_down))
     pcollect(mp);
 }
 
@@ -156,6 +156,12 @@ static void free_chunk(mchunk_t* cp) {
 }
 
 pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
+#ifdef DEBUG
+  if (mp == NULL) {
+    pkraise(SIGN_SEGFAULT);
+    return;
+  }
+#endif
   mchunk_t* cp;
   pptr_t* p;
   pptr_list_t** ip;
@@ -266,10 +272,16 @@ pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes) {
 }
 
 void pfree(memory_t* mp, pptr_t* p) {
+#ifdef DEBUG
+  if (mp == NULL || p == NULL) {
+    pkraise(SIGN_SEGFAULT);
+    return;
+  }
+#endif
   mchunk_t* cp = (mchunk_t*)pptr_head(p) - 1;
   p->free = true;
   
-  if (cp->unused) {
+  if (cp->unused != NULL) {
     pptr_list_t* tp = cp->unused;
     tp->ptr = p;
     cp->unused = tp->next;
