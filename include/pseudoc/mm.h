@@ -1,3 +1,9 @@
+/**
+ * memory management
+ * 
+ * 
+ **/
+
 #ifndef PSEUDOC_MM_H
 #define PSEUDOC_MM_H
 
@@ -14,7 +20,7 @@ typedef struct memory_s memory_t;
 static void pcollect(memory_t* mp);
 
 static void pmemcpy(pptr_t* dst, pptr_t* src);
-static inline void try_cc(memory_t* mp);
+static inline void try_rc(memory_t* mp);
 
 /**
  * memory_t constructor
