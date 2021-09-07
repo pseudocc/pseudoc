@@ -188,7 +188,7 @@ pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes) {
   if (p->size == n_bytes)
     return p;
 
-  mchunk_t* cp = pptr_head(p);
+  mchunk_t* cp = (mchunk_t*)pptr_head(p) - 1;
   pptr_t* rp;
 
   if (p->size < n_bytes) {
@@ -224,7 +224,7 @@ pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes) {
 }
 
 void pfree(memory_t* mp, pptr_t* p) {
-  mchunk_t* cp = pptr_head(p);
+  mchunk_t* cp = (mchunk_t*)pptr_head(p) - 1;
   p->free = true;
   
   if (cp->unused) {
