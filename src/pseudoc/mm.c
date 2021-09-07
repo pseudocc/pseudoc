@@ -115,6 +115,12 @@ pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
   if (cp == NULL)
     return NULL;
   ip = &cp->free;
+  mp->chunks[mp->n_chunks++] = cp;
+  
+  if (mp->n_chunks == mp->n_chunks_limits) {
+    mp->n_chunks_limits = mp->n_chunks_limits << 1;
+    pcollect(mp);
+  }
 
 extract_pptr:
   pptr_t* rp;
