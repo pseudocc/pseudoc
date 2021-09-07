@@ -33,6 +33,8 @@ pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes);
 
 /**
  * mark certain pptr_t as free
+ * 
+ * Does not merge with adjacent free pptr_t.
  **/
 void pfree(memory_t* mp, pptr_t* p);
 
