@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pseudoc/mm.h>
+#include <pseudoc/kernel.h>
 
 #define CC_FREQ 1000
 #define N_CHUNKS 8
@@ -27,7 +28,43 @@ struct mchunk_s {
 };
 
 static void pcollect(memory_t* mp) {
-  // @todo
+  mchunk_t* cp;
+  pptr_list_t** ip;
+  pptr_t* p;
+
+  for (unsigned i = 0; i < mp->n_chunks; i++) {
+    cp = mp->chunks[i];
+    cp->size = 0;
+
+    ip = &cp->free;
+    p = (pptr_t*)(cp + 1);
+
+    while (p->size) {
+      pptr_t* np = pptr_next(p);
+      if (p->free) {
+        while (np->free && np->size)
+          np = pptr_next(p);
+        p->size = np->offset - p->offset;
+
+        if (*ip == NULL) {
+          *ip = cp->unused;
+          cp->unused = NULL;
+        }
+#ifdef DEBUG
+        if (*ip == NULL)
+          pkraise(SIGN_SEGFAULT);
+#endif
+        (*ip)->ptr = p;
+        ip = &(*ip)->next;
+      }
+      p = np;
+    }
+
+    if (*ip != NULL) {
+      cp->unused = *ip;
+      *ip = NULL;
+    }
+  }
   mp->cc_count_down = CC_FREQ;
 }
 
@@ -116,7 +153,7 @@ pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
     return NULL;
   ip = &cp->free;
   mp->chunks[mp->n_chunks++] = cp;
-  
+
   if (mp->n_chunks == mp->n_chunks_limits) {
     mp->n_chunks_limits = mp->n_chunks_limits << 1;
     pcollect(mp);
@@ -197,6 +234,7 @@ void pfree(memory_t* mp, pptr_t* p) {
   else 
     cp->free = pptr_list(p, cp->free);
   
+  cp->size = cp->size + p->size;
   try_cc(mp);
 }
 
