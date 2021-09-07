@@ -1,7 +1,8 @@
 /**
  * memory management
  * 
- * 
+ * Free a pptr_t will make the chunk pool dirty,
+ * so we run pcollect regularly.
  **/
 
 #ifndef PSEUDOC_MM_H

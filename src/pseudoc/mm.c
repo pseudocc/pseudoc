@@ -3,10 +3,10 @@
 #include <pseudoc/mm.h>
 #include <pseudoc/kernel.h>
 
-#define CC_FREQ 1000
+#define RC_FREQ 1000
 #define N_CHUNKS 8
 struct memory_s {
-  unsigned cc_count_down;
+  unsigned rc_count_down;
 
   unsigned n_chunks;
   unsigned n_chunks_limits;
@@ -67,7 +67,7 @@ static void pcollect(memory_t* mp) {
       *ip = NULL;
     }
   }
-  mp->cc_count_down = CC_FREQ;
+  mp->rc_count_down = RC_FREQ;
 }
 
 static void pmemcpy(pptr_t* dst, pptr_t* src) {
@@ -75,8 +75,8 @@ static void pmemcpy(pptr_t* dst, pptr_t* src) {
   memcpy(pptr_cptr(dst), pptr_cptr(src), size);
 }
 
-static inline void try_cc(memory_t* mp) {
-  if (!--(mp->cc_count_down))
+static inline void try_rc(memory_t* mp) {
+  if (!--(mp->rc_count_down))
     pcollect(mp);
 }
 
@@ -93,7 +93,7 @@ memory_t* pminit() {
 
   mp->n_chunks = 0;
   mp->n_chunks_limits = N_CHUNKS;
-  mp->cc_count_down = CC_FREQ;
+  mp->rc_count_down = RC_FREQ;
 
   return mp;
 }
@@ -292,7 +292,7 @@ void pfree(memory_t* mp, pptr_t* p) {
     cp->free = pptr_list(p, cp->free);
   
   cp->size = cp->size + p->size;
-  try_cc(mp);
+  try_rc(mp);
 }
 
 void pmclean(memory_t* mp) {
