@@ -192,32 +192,51 @@ pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes) {
   pptr_t* rp;
 
   if (p->size < n_bytes) {
-    unsigned alloc_size = p->size + rp->size + sizeof(pptr_t);
+    unsigned alloc_size = p->size;
     rp = pptr_next(p);
-    
-    if (rp && rp->free && alloc_size >= n_bytes) {
-      pptr_list_t** ip = &cp->free;
-      pptr_list_t* tp;
-      while ((*ip)->ptr != rp)
-        ip = &(*ip)->next;
-      tp = *ip;
-      *ip = tp->next;
-      tp->next = cp->unused;
-      cp->unused = tp;
-      p->size = alloc_size;
 
-      return prealloc(mp, p, n_bytes);
+    // peek if there are enough continuous free space
+    while (rp->free && rp->size && alloc_size < n_bytes) {
+      alloc_size = alloc_size + rp->size + sizeof(pptr_t);
+      rp = pptr_next(rp);
+    }
+    
+    if (alloc_size < n_bytes) {  
+      rp = pmalloc(mp, n_bytes);
+      pmemcpy(rp, p);
+      
+      return rp;
     }
 
-    rp = pmalloc(mp, n_bytes);
-    pmemcpy(rp, p);
+    pptr_list_t** ip = &cp->free;
+    while (p->size != alloc_size && *ip != NULL) {
+      pptr_t* ep = (*ip)->ptr;
+      if (ep < rp && ep > p) {
+        // remove this from free list
+        pptr_list_t* tp = *ip;
+        *ip = tp->next;
+        // push this to unused list
+        tp->next = cp->unused;
+        cp->unused = tp;
 
-    return rp;
+        p->size = p->size + ep->size + sizeof(pptr_t);
+      }
+      else 
+        ip = &(*ip)->next;
+    }
+    
+    // free list might not contains all free chunks
+    p->size = alloc_size;
+
+    return prealloc(mp, p, n_bytes);
   }
 
   rp = pptr_cut(p, n_bytes);
   if (!rp)
     return p;
+
+  // a new pptr_t occupies some bytes
+  cp->size = cp->size - sizeof(pptr_t);
   pfree(mp, rp);
 
   return p;
