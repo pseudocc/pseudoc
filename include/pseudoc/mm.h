@@ -25,18 +25,20 @@ static inline void try_rc(memory_t* mp);
 
 /**
  * memory_t constructor
+ * 
+ * n_bytes is the size of quick memory region
  **/
-memory_t* pminit();
+memory_t* pminit(unsigned n_bytes);
 
 /**
  * memory allocate
  **/
-pptr_t* pmalloc(memory_t* mp, size_t n_bytes);
+pptr_t* pmalloc(memory_t* mp, unsigned n_bytes);
 
 /**
  * memory re-allocate
  **/
-pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes);
+pptr_t* prealloc(memory_t* mp, pptr_t* p, unsigned n_bytes);
 
 /**
  * mark certain pptr_t as free
@@ -49,5 +51,8 @@ void pfree(memory_t* mp, pptr_t* p);
  * memory_t deconstructor
  **/
 void pmclean(memory_t* mp);
+
+void* qget(memory_t* mp, unsigned n_bytes);
+void qreset(memory_t* mp);
 
 #endif

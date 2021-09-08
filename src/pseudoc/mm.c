@@ -6,6 +6,10 @@
 #define RC_FREQ 1000
 #define N_CHUNKS 8
 struct memory_s {
+  void* qmemory;
+  unsigned qsize;
+  unsigned qpos;
+
   unsigned rc_count_down;
 
   unsigned n_chunks;
@@ -80,16 +84,25 @@ static inline void try_rc(memory_t* mp) {
     pcollect(mp);
 }
 
-memory_t* pminit() {
+memory_t* pminit(unsigned n_bytes) {
   memory_t* mp = malloc(sizeof(memory_t));
   if (mp == NULL)
     return NULL;
+
+  mp->qmemory = malloc(n_bytes);
+  if (mp->qmemory == NULL) {
+    free(mp);
+    return NULL;
+  }
 
   mp->chunks = malloc(sizeof(mchunk_t*) * N_CHUNKS);
   if (mp->chunks == NULL) {
     free(mp);
     return NULL;
   }
+  
+  mp->qpos = 0;
+  mp->qsize = n_bytes;
 
   mp->n_chunks = 0;
   mp->n_chunks_limits = N_CHUNKS;
@@ -155,7 +168,7 @@ static void free_chunk(mchunk_t* cp) {
   free(cp);
 }
 
-pptr_t* pmalloc(memory_t* mp, size_t n_bytes) {
+pptr_t* pmalloc(memory_t* mp, unsigned n_bytes) {
 #ifdef DEBUG
   if (mp == NULL) {
     pkraise(SIGN_SEGFAULT);
@@ -213,7 +226,7 @@ extract_pptr:
   return p;
 }
 
-pptr_t* prealloc(memory_t* mp, pptr_t* p, size_t n_bytes) {
+pptr_t* prealloc(memory_t* mp, pptr_t* p, unsigned n_bytes) {
   if (p->size == n_bytes)
     return p;
 
@@ -302,6 +315,21 @@ void pmclean(memory_t* mp) {
   for (unsigned i = 0; i < mp->n_chunks; i++)
     free_chunk(mp->chunks[i]);
   
+  free(mp->qmemory);
   free(mp->chunks);
   free(mp);
+}
+
+void* qget(memory_t* mp, unsigned n_bytes) {
+  unsigned end = mp->qpos + n_bytes;
+  if (end < mp->qsize) {
+    void* p = (void*)((byte_t*)mp->qmemory + mp->qpos);
+    mp->qpos = end;
+    return p;
+  }
+  return NULL;
+}
+
+void qreset(memory_t* mp) {
+  mp->qpos = 0;
 }
