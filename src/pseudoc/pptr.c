@@ -1,5 +1,4 @@
 #include <pseudoc/pptr.h>
-#include <stdlib.h>
 
 #define ALIGN_NBITS 2
 
