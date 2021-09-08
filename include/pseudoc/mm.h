@@ -53,6 +53,7 @@ void pfree(memory_t* mp, pptr_t* p);
 void pmclean(memory_t* mp);
 
 void* qget(memory_t* mp, unsigned n_bytes);
+void qpop(memory_t* mp, unsigned n_bytes);
 void qreset(memory_t* mp);
 
 #endif

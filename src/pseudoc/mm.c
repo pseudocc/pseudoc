@@ -330,6 +330,10 @@ void* qget(memory_t* mp, unsigned n_bytes) {
   return NULL;
 }
 
+void qpop(memory_t* mp, unsigned n_bytes) {
+  mp->qpos = mp->qpos - n_bytes;
+}
+
 void qreset(memory_t* mp) {
   mp->qpos = 0;
 }
