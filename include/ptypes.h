@@ -16,9 +16,9 @@ typedef float float32_t;
 typedef double float64_t;
 
 enum {
-  PR_UNKNOWN = -1,
-  PR_FAILURE,
-  PR_SUCCESS
+  PR_SUCCESS,
+  PR_NOTHING,
+  PR_OUTOFMEM,
 };
 
 #endif
