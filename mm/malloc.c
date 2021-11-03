@@ -8,7 +8,6 @@ typedef struct alloc_s alloc_t;
 
 static alloc_t* free_allocs = null;
 static alloc_t* used_allocs = null;
-static uint64_t arena_cap;
 
 static uint64_t ppos = 0;
 static uint64_t* pposp = &ppos;
@@ -33,7 +32,6 @@ int32_t memory_init(uint64_t size) {
       n_pages++;
     size = n_pages * PAGE_SIZE;
   }
-  arena_cap = size;
   return PR_SUCCESS;
 }
 
@@ -76,10 +74,6 @@ paddr_t malloc(uint32_t n_bytes) {
     }
     p = p->next;
   }
-
-  uint64_t nppos = ppos + n_bytes;
-  if (nppos > arena_cap)
-    return nullp;
 
   p = std_malloc(sizeof(alloc_t));
   if (p == null)
