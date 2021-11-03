@@ -18,14 +18,12 @@ struct paddr_s {
 };
 
 enum {
+  PROT_NONE = 0,
   PROT_READ = 1,
   PROT_WRITE = 2,
   PROT_EXEC = 4,
 };
 
 static const paddr_t nullp = { .prot = 0 };
-inline int32_t paddr_is_null(paddr_t addr) {
-  return addr.prot == 0;
-}
 
 #endif
