@@ -2,8 +2,8 @@
 #define PSEUDOC_MODULE_H
 
 #include <ptypes.h>
-#include <pseudoc/variable.h>
-#include <pseudoc/function.h>
+#include <pseudoc/var.h>
+#include <pseudoc/func.h>
 
 typedef struct module_s module_t;
 typedef struct depend_s depend_t;
@@ -11,8 +11,8 @@ typedef struct depend_s depend_t;
 struct modules_s {
   char* name;
 
-  fundef_t* static_funs;
-  uint32_t n_static_deps;
+  funcdef_t* static_funcs;
+  uint32_t n_static_funcs;
 
   vardef_t* static_vars;
   uint32_t n_static_vars;

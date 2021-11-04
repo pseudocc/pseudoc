@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 
-typedef struct fundef_s fundef_t;
+typedef struct funcdef_s funcdef_t;
 
-fundef_t* fundef_read(FILE* f);
+funcdef_t* fundef_read(FILE* f);
 
 #endif
