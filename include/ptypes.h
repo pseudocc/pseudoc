@@ -23,7 +23,8 @@ enum {
   PR_FILEWRITE,
   PR_FILEREAD,
   PR_FILESEEK,
-  PR_NULLPTR
+  PR_NULLPTR,
+  PR_ARUGUMENT
 };
 
 #endif
