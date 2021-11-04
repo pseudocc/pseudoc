@@ -6,6 +6,10 @@
 typedef struct page_s page_t;
 typedef struct phdr_s phdr_t;
 
+extern uint8_t* fhead;
+extern page_t** ptbl;
+extern uint32_t ptbl_size;
+
 struct phdr_s {
   uint64_t frame: 52;
   uint16_t n_refs: 10;
@@ -23,14 +27,13 @@ struct page_s {
 
 #define PAGE_SIZE (1 << PAGE_ORDER)
 
+void page_sweep();
 int32_t page_init(uint8_t order, char* fp);
 caddr_t page_head(page_t* p);
-
 int32_t page_get(int32_t p1, int32_t p2, page_t* p);
-int32_t page_set(int32_t p1, int32_t p2, page_t p);
 
 static int32_t page_swap_init(char* fp);
-int32_t page_swap_in(page_t* p, int32_t doff);
-int32_t page_swap_out(page_t* p, int32_t doff);
+static int32_t page_swap_in(page_t* p);
+static int32_t page_swap_out(page_t* p);
 
 #endif
