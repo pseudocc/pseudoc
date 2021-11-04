@@ -4,7 +4,7 @@
 #include <mm/page.h>
 #include <mm/addr.h>
 
-static caddr_t caddr(paddr_t addr);
+static int32_t caddr(paddr_t addr, caddr_t* r);
 
 #define DECL_PTR_OP(ptype)\
   int32_t ptr_set_##ptype(paddr_t addr, ptype##_t v);\

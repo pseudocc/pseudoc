@@ -12,9 +12,6 @@ for myself, main purpose is to learn a lot of things:
     - max heap
     - linked list
     - etc.
-  - linux
-    - open/close
-    - brk/sbrk/mmap
   - memory management
     - disk <=> memory
     - arrange scratches
