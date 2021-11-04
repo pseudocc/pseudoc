@@ -23,18 +23,6 @@ struct alloc_s {
   alloc_t* prev;
 };
 
-int32_t memory_init(uint64_t size) {
-  if (size < MIN_ARENA_SIZE)
-    size = MIN_ARENA_SIZE;
-  else {
-    uint64_t n_pages = size / PAGE_SIZE;
-    if (size % PAGE_SIZE)
-      n_pages++;
-    size = n_pages * PAGE_SIZE;
-  }
-  return PR_SUCCESS;
-}
-
 #define MALLOC_ALIGN_BYTES 4
 #define MIN_ALLOC_SIZE (MALLOC_ALIGN_BYTES + sizeof(alloc_t))
 
